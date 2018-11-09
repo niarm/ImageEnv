@@ -14,6 +14,7 @@ class ImageEnv(gym.Env):
   def __init__(self, mapImageDimension=(100,100), perceptionFieldSize = (100,100)):
     self.imagePaths = []
     self.maskPaths = []
+    self.imageScaleFactor = 1.0
 
     self.mainImageDimension = None
     self.mapImageDimension = np.asarray(mapImageDimension)
@@ -39,7 +40,8 @@ class ImageEnv(gym.Env):
     newPF = SimplePerceptionField(id, startPosition=(0,0), shape=self.perceptionFieldSize)
     self.perceptionFields.append(newPF)
 
-  def registerImagesAndMasks(self, imagePaths, maskPaths):
+  def registerImagesAndMasks(self, imagePaths, maskPaths, scaleFactor=1.0):
+    self.imageScaleFactor = scaleFactor
     self.imagePaths = imagePaths
     self.maskPaths = maskPaths
     
@@ -49,6 +51,17 @@ class ImageEnv(gym.Env):
   def loadNextImageAndMask(self, id):
     image = cv2.imread(self.imagePaths[id])
     mask = cv2.imread(self.maskPaths[id])
+
+    image = cv2.resize(image, (0,0), fx=self.imageScaleFactor, fy=self.imageScaleFactor, interpolation=cv2.INTER_CUBIC)
+    mask = cv2.resize(mask, (0,0), fx=self.imageScaleFactor, fy=self.imageScaleFactor, interpolation=cv2.INTER_CUBIC)
+
+    mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+    mask = mask*255
+    mask = np.clip(mask, 0, 255)
+    mask = np.repeat(mask[:, :, np.newaxis], 3, axis=2)
+
+    assert mask.shape == image.shape
+
     minimap  = cv2.resize(image, dsize=(128, 140), interpolation=cv2.INTER_CUBIC)
 
     self.images.append(image)
@@ -70,10 +83,9 @@ class ImageEnv(gym.Env):
     self.mainImageDimension = self.currentImage.shape
     
     for pf in self.perceptionFields:
-      pf.reset()
       pf.setEnvironmentSize(self.mainImageDimension)
 
-  def step(self, action=None):
+  def step(self, action = None):
     state = []
 
     self.perceptionResults = []
@@ -124,4 +136,4 @@ class ImageEnv(gym.Env):
 
     cv2.imshow("ImageEnvironment::MINIMAP", self.currentMiniMap);
     cv2.imshow("ImageEnvironment::MAIN", self.renderedOutput);
-    cv2.waitKey(40)
+    cv2.waitKey(100)

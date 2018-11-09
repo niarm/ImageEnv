@@ -8,23 +8,25 @@ if __name__== "__main__":
     
     images = []
     masks = []
-    for i in range(45,80):
-        img = "data/input/images/"+str(i)+".jpg"
-        mask = "data/input/masks/"+str(i)+".jpg"
+    for i in range(1,80):
+        img = "data/DAVIS/JPEGImages/Full-Resolution/bear/"+'{0:05d}'.format(i)+".jpg"
+        mask = "data/DAVIS/Annotations/Full-Resolution/bear/"+'{0:05d}'.format(i)+".png"
+        
         images.append(img)
         masks.append(mask)
 
-    
-    env.registerImagesAndMasks(imagePaths=images, maskPaths=masks)
+    env.registerImagesAndMasks(imagePaths=images, maskPaths=masks, scaleFactor=0.5)
     env.nextImage()
     count = 0
     
     while True:
         env.step()
-        env.render()
-        print("step #", count)
+        #print("step #", count)
+
         count += 1
-        if count > 2000:
+        env.render()
+
+        if count > 1000:
             print("NEXT IMAGE")
             count = 0
             env.nextImage()
