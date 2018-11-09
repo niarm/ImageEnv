@@ -7,16 +7,18 @@ class SimplePerceptionField():
         self.shape = shape
         self.startPosition = startPosition
         self.environmentSize = (500,500)
-        
+        self.actionSpace = np.zeros(5)
+
         self.pos = np.asarray(self.startPosition)
         self.vel = np.zeros(2)
         self.acc = np.zeros(2)
-        self.maxspeed = 2;
+        self.maxspeed = 4;
 
         self.painterPos = np.asarray( (self.shape[0] * 0.5, self.shape[1]*0.5 )).astype(int)
         self.painterVel = np.zeros(2)
         self.painterAcc = np.random.rand(2)
-        self.painterMaxspeed = 10
+        self.shouldPaint = False
+        self.painterMaxspeed = 8
         
 
     @property
@@ -30,6 +32,22 @@ class SimplePerceptionField():
     def setEnvironmentSize(self, size):
         self.environmentSize = (size[0], size[1])
         print("got new env-size",self.environmentSize)
+
+    def step(self, action):
+        '''Takes an action and performs an update on the Window and the painter
+        
+        Arguments:
+            action {list} -- ['acc_x', 'acc_y', 'painter_acc_x','painter_acc_y', 'paint']
+        '''
+        #print("action:", action)
+        assert action.shape == self.actionSpace.shape
+
+        self.acc = np.asarray( (action[0], action[1] ) )
+        self.painterAcc = np.asarray( (action[2], action[3] ) )
+        self.shouldPaint = action[4]
+
+        self.update()
+
 
     def update(self):
         self.vel = np.add(self.vel, self.acc)
@@ -48,26 +66,39 @@ class SimplePerceptionField():
         #print("self.shape[1]", self.shape[1])
 
         ### BOUNDING BOX OF MAIN IMAGE WITH SLIDING IMAGE
-        if self.pos[0] <= 0 or self.pos[0]+self.shape[0] >= self.environmentSize[1]:
-            #self.hardStop()
-            self.vel[0] *= -1
-            self.acc[0] *= -1
+        if self.pos[0] <= 0:
+            self.hardStop()
+            self.pos[0] = 0
 
-        if self.pos[1] <= 0 or self.pos[1]+self.shape[1] >= self.environmentSize[0]:
-            #self.hardStop() 
-            self.vel[1] *= -1
-            self.acc[1] *= -1   
+        if self.pos[0]+self.shape[0] >= self.environmentSize[1]:
+            self.hardStop()
+            self.pos[0] = self.environmentSize[1]
+
+        if self.pos[1] <= 0:
+            self.hardStop()  
+            self.pos[1] = 0
+
+        if self.pos[1]+self.shape[1] >= self.environmentSize[0]:
+            self.hardStop()
+            self.pos[1] = self.environmentSize[0]
+
 
         ### BOUNDING BOX OF PAINTER WITH SLIDING WINDOW
-        if self.painterPos[0] <= 0 or self.painterPos[0] >= self.shape[0]:
-            #self.hardStop()
-            self.painterVel[0] *= -1
-            self.painterAcc[0] *= -1
+        if self.painterPos[0] <= 0:
+            self.painterPos[0] = 0
+            self.hardStopPainter()
         
-        if self.painterPos[1] <= 0 or self.painterPos[1] >= self.shape[1]:
-            #self.hardStop()
-            self.painterVel[1] *= -1
-            self.painterAcc[1] *= -1
+        if self.painterPos[0] >= self.shape[0]:
+            self.painterPos[0] = self.shape[0]
+            self.hardStopPainter()
+
+        if self.painterPos[1] <= 0:
+            self.painterPos[1] = 0
+            self.hardStopPainter()
+        
+        if self.painterPos[1] >= self.shape[1]:
+            self.painterPos[1] = self.shape[1]
+            self.hardStopPainter()
         
         #print("pos: {} , vel: {} , acc: {}".format(self.pos, self.vel, self.acc))
 
