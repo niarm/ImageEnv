@@ -6,4 +6,4 @@ register(
 )
 
 from .textPerceptionField import TextPerceptionField
-from .use_feature_extractor import USEFeatureExtractor
+from .use_feature_extractor import USEFeatureExtractor, FeatureExtractor

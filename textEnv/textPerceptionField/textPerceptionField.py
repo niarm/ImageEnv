@@ -1,4 +1,14 @@
 import numpy as np
+from dataclasses import dataclass
+from textEnv.use_feature_extractor import FeatureExtractor
+
+@dataclass
+class TextPerceptionFieldAction:
+    acc_left: bool = 0
+    acc_right: bool = 0
+    increase_window:bool = 0
+    decrease_window:bool = 0
+    extract_features:bool = 0
 
 class TextPerceptionField():
     def __init__(self, id, startPosition = (0,), start_shape=(5,)):
@@ -16,6 +26,7 @@ class TextPerceptionField():
         
         # action-space= action {list} -- ['acc_left', 'acc_right' , 'increase_window', 'decrease_window']
         self.n_actions = 4
+        self.last_action = None
 
         self.pos = np.asarray(self.startPosition)
         self.vel = np.zeros(1)
@@ -31,6 +42,10 @@ class TextPerceptionField():
         return np.asarray([ round(self.pos[0]), round(self.pos[0])+self.shape[0] ]).astype(int)
     
     @property
+    def percentage_position_bounding_box(self):
+        return np.divide(self.boundingBox, self.MAX_PERCEPTION_WINDOW_SIZE)
+
+    @property
     def perception_window(self):
         text_list = self.text.split()
         window = " ".join(text_list[self.boundingBox[0] : self.boundingBox[1]])
@@ -41,31 +56,23 @@ class TextPerceptionField():
         self.environmentSize = np.asarray( [len(self.text.split())] )
         self.MAX_PERCEPTION_WINDOW_SIZE = self.environmentSize[0]
 
-    def step(self, action:dict):
-        '''Takes an action and performs an update on the Window and the painter
-        
-        Arguments:
-            actions binary one-hot {dict} -- ['acc_left', 'acc_right' , 'increase_window', 'decrease_window']
-        '''
-        #print("action:", action)
-        assert len(action.keys()) == self.n_actions
-
-        #print(f"id: {self.id}, action: {action}, shape: {self.shape}, environmentSize: {self.environmentSize}")
-
+    def step(self, action:TextPerceptionFieldAction):
         #set acceleration
-        if action['acc_left']==1:
+        if action.acc_left==1:
             self.acc = np.asarray( [self.acc_speed]  )
-        elif action['acc_right']==1:
+        elif action.acc_right==1:
             self.acc = np.asarray( [-self.acc_speed]  )
         else:
             self.acc = np.zeros(1)
         
         #set perception-window size
-        if (action['increase_window']==1) and self.shape[0] < self.MAX_PERCEPTION_WINDOW_SIZE:
+        if (action.increase_window==1) and self.shape[0] < self.MAX_PERCEPTION_WINDOW_SIZE:
             self.shape = np.asarray([(self.shape[0]+1)])
-        if (action['decrease_window']==1) and self.shape[0] > self.MIN_PERCEPTION_WINDOW_SIZE:
+        if (action.decrease_window==1) and self.shape[0] > self.MIN_PERCEPTION_WINDOW_SIZE:
             self.shape = np.asarray([(self.shape[0]-1)])
         
+        self.last_action = action
+
         self.update()
 
 
