@@ -1,4 +1,7 @@
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
+*/__pycache__/*
+*/textEnv/__pycache__/*
+
 
 /data/
