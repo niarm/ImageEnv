@@ -17,9 +17,12 @@ class TextSimilarityEnv(gym.Env):
     self.possible_combinations=None
 
     self.n_compared_texts = n_compared_texts
+    self.current_text_ids = None
     self.current_texts = None
     self.already_seen_combinations = set()
     self.perception_fields = []
+    self.miniatures = []
+
     self.feature_extractor = feature_extractor
 
     self.state = None
@@ -48,14 +51,20 @@ class TextSimilarityEnv(gym.Env):
       return False
 
     # set next text-pair
-    self.current_texts = self.possible_combinations.pop()
-    
+    self.current_text_ids = self.possible_combinations.pop()
+    self.current_texts = [self.texts[idx] for idx in self.current_text_ids]
+
     #reset perception fields
     self.reset_perception_fields()
+
+    #calculate "miniatures":
+    self.calculate_miniatures()
+
     return True
   
   def step(self, action = None):
     self.state = {}
+    perception_results = []
 
     for pf_dict in self.perception_fields:
       for pf in pf_dict['perception_fields']:
@@ -77,34 +86,34 @@ class TextSimilarityEnv(gym.Env):
 
         box = pf.boundingBox
         window = pf.perception_window
-        self.state[str(pf_dict['pf_idx'])] = {'box':box, 'window':window, 'full_text':pf.text}
-        #perceptionVisibleWindow = self.currentImage[box[1]:box[3], box[0]:box[2], :]
-        #self.perceptionResults.append(perceptionVisibleWindow)
+        
+        perception_results.append({'t_id':pf.id,'box':box, 'window':window})
+    
+    self.state['perception_fields'] = perception_results
+    self.state['miniatures'] = self.miniatures
 
     #state.append(self.perceptionResults)
     return self.state
 
   def reset_perception_fields(self):
+    #reset perception-fields
     for pf_dict in self.perception_fields:
       perception_fields = pf_dict['perception_fields']
       for pf in perception_fields:
         pf.set_text(self.texts[ int( pf_dict['pf_idx'] ) ])
         pf.reset()
 
-
-  def render(self, mode='human', close=False):
-    #render text to std.out
-    render_output = []
-    print(self.state)
-    for pf_dict in self.perception_fields:
-      perception_fields = pf_dict['perception_fields']
-      for pf in perception_fields:
-        full_text = pf.text
-        full_text_list = full_text.split()
-        full_text_list.insert(self.state[str(pf.id)]['box'][0],"---->")
-        full_text_list.insert(self.state[str(pf.id)]['box'][1]+1,"<----")
-        out_text = " ".join(full_text_list)
-        render_output.append(out_text)
+  def calculate_miniatures(self):
+    miniatures = []
+    vectors = self.feature_extractor.transform(self.current_texts)
+    for idx, miniature_vec in enumerate(vectors):
+      min_dict = {'t_id':idx, 'vectors':miniature_vec}
+      miniatures.append(min_dict)
     
-    print(f"WINDOW: {render_output}")
-    print(f"STATE: {self.state}")
+    self.miniatures = miniatures
+
+
+  def render(self, mode='human', close=False):        
+    #print(f"WINDOW: {render_output}")
+    #print(f"STATE: {self.state['perception_fields']}")
+    pass
