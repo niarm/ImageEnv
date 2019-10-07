@@ -4,7 +4,9 @@ import tensorflow as tf
 import tensorflow_hub as tfhub
 import tf_sentencepiece
 
-os.environ["TFHUB_CACHE_DIR"] = "/home/ubuntu/tfhub_cache"
+cache_path = "./tfhub_cache"
+os.makedirs(cache_path)
+os.environ["TFHUB_CACHE_DIR"] = cache_path 
 
 class FeatureExtractor():
     def __init__(self, *args, **kwargs):
