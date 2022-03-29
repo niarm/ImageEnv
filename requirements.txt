@@ -72,7 +72,7 @@ gym==0.14.0
 h5py==2.8.0
 hdijupyterutils==0.12.9
 heapdict==1.0.0
-horovod==0.16.4
+horovod==0.24.0
 html5lib==1.0.1
 identify==1.4.7
 idna==2.6
